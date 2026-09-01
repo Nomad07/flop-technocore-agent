@@ -1,5 +1,7 @@
 """Agent identity management for Technocore."""
 
+import hashlib
+
 from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
 
 
@@ -48,3 +50,19 @@ def load_private_key(seed_hex: str) -> Ed25519PrivateKey:
         raise ValueError("Ed25519 seed must be exactly 32 bytes.")
 
     return Ed25519PrivateKey.from_private_bytes(seed)
+
+
+def did_fingerprint(did: str) -> str:
+    """Return the first 16 hex characters of the DID SHA-256 hash."""
+
+    return hashlib.sha256(
+        did.encode("utf-8")
+    ).hexdigest()[:16]
+
+
+def did_note_path(did: str) -> str:
+    """Return the sharded Technocore DID note path."""
+
+    fingerprint = did_fingerprint(did)
+
+    return f"/kv/did-{fingerprint[:2]}/{fingerprint[2:]}"
