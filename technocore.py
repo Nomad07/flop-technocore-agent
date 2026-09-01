@@ -1,5 +1,7 @@
 """Technocore API client."""
 
+import urllib.parse
+
 import requests
 
 
@@ -43,3 +45,12 @@ class TechnocoreClient:
             params["format"] = format
 
         return self.get(f"/r/{room}", params=params)
+
+    def publish_did(self, did: str, note_path: str):
+        """Publish a DID to the Technocore registry."""
+
+        value = urllib.parse.quote(did, safe="")
+
+        return self.get(
+            f"{note_path.rstrip('/')}/set/{value}"
+        )
