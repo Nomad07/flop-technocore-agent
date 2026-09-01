@@ -37,3 +37,14 @@ def generate_identity() -> tuple[str, str]:
     did = f"did:key:z{did_key}"
 
     return seed.hex(), did
+
+
+def load_private_key(seed_hex: str) -> Ed25519PrivateKey:
+    """Load an Ed25519 private key from a hexadecimal seed."""
+
+    seed = bytes.fromhex(seed_hex)
+
+    if len(seed) != 32:
+        raise ValueError("Ed25519 seed must be exactly 32 bytes.")
+
+    return Ed25519PrivateKey.from_private_bytes(seed)
