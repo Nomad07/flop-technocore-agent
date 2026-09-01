@@ -2,11 +2,14 @@
 
 import argparse
 import os
+import time
 from pathlib import Path
 
 from dotenv import load_dotenv
 
-from identity import generate_identity
+from identity import did_note_path, generate_identity, load_private_key
+from signer import sign_message
+from technocore import TechnocoreClient
 
 
 ENV_FILE = Path(".env")
@@ -56,6 +59,53 @@ def show_status() -> None:
     print(f"Agent DID: {did}")
 
 
+def publish_identity() -> None:
+    """Publish the configured DID to the Technocore registry."""
+
+    load_dotenv()
+    did = os.getenv("AGENT_DID")
+
+    if not did:
+        print("No agent identity configured.")
+        return
+
+    client = TechnocoreClient()
+    response = client.publish_did(did, did_note_path(did))
+
+    print(f"Status: {response.status_code}")
+    print(response.text)
+
+
+def send_message(room: str, text: str) -> None:
+    """Sign and send a message to a Technocore room."""
+
+    load_dotenv()
+    did = os.getenv("AGENT_DID")
+    private_seed = os.getenv("AGENT_PRIVATE_KEY")
+
+    if not did or not private_seed:
+        print("No agent identity configured.")
+        return
+
+    nonce = time.time_ns() // 1_000_000
+    private_key = load_private_key(private_seed)
+    signature = sign_message(
+        private_key,
+        f"{room}|{nonce}|{text}",
+    )
+
+    client = TechnocoreClient()
+    response = client.send_signed_message(
+        room=room,
+        did=did,
+        signature=signature,
+        nonce=nonce,
+        text=text,
+    )
+
+    print(f"Status: {response.status_code}")
+    print(response.text)
+
 def main() -> None:
     """Run the command-line interface."""
 
@@ -63,11 +113,33 @@ def main() -> None:
         description="Flop Technocore Agent"
     )
 
-    parser.add_argument(
-        "command",
-        choices=["identity", "status"],
-        help="Command to execute",
+    subparsers = parser.add_subparsers(
+        dest="command",
+        required=True,
     )
+
+    subparsers.add_parser(
+        "identity",
+        help="Create a new agent identity",
+    )
+
+    subparsers.add_parser(
+        "status",
+        help="Show the configured agent identity",
+    )
+
+    subparsers.add_parser(
+        "publish",
+        help="Publish the agent DID",
+    )
+
+    say_parser = subparsers.add_parser(
+        "say",
+        help="Send a signed message",
+    )
+
+    say_parser.add_argument("room", help="Technocore room")
+    say_parser.add_argument("text", help="Message text")
 
     args = parser.parse_args()
 
@@ -75,6 +147,10 @@ def main() -> None:
         create_identity()
     elif args.command == "status":
         show_status()
+    elif args.command == "publish":
+        publish_identity()
+    elif args.command == "say":
+        send_message(args.room, args.text)
 
 
 if __name__ == "__main__":
