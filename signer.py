@@ -9,8 +9,8 @@ def sign_message(
     private_key: Ed25519PrivateKey,
     message: str,
 ) -> str:
-    """Sign a message and return a base64-encoded signature."""
+    """Sign a message and return a base64url signature."""
 
     signature = private_key.sign(message.encode("utf-8"))
 
-    return base64.b64encode(signature).decode("ascii")
+    return base64.urlsafe_b64encode(signature).decode("ascii").rstrip("=")
