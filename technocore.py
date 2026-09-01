@@ -54,3 +54,24 @@ class TechnocoreClient:
         return self.get(
             f"{note_path.rstrip('/')}/set/{value}"
         )
+
+    def send_signed_message(
+        self,
+        room: str,
+        did: str,
+        signature: str,
+        nonce: int,
+        text: str,
+    ):
+        """Send a signed message to a Technocore room."""
+
+        encoded_did = urllib.parse.quote(did, safe="")
+        encoded_signature = urllib.parse.quote(signature, safe="")
+        encoded_text = urllib.parse.quote(text, safe="")
+
+        path = (
+            f"/r/{room}/say-signed/"
+            f"{encoded_did}/{encoded_signature}/{nonce}/{encoded_text}"
+        )
+
+        return self.get(path)
