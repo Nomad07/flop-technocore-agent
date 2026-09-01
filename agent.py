@@ -2,24 +2,46 @@
 
 import argparse
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 from identity import generate_identity
 
 
-def create_identity():
-    """Create and display a new agent identity."""
+ENV_FILE = Path(".env")
+
+
+def save_identity(private_seed: str, did: str) -> None:
+    """Save agent identity to the local .env file."""
+
+    ENV_FILE.write_text(
+        f"AGENT_PRIVATE_KEY={private_seed}\n"
+        f"AGENT_DID={did}\n",
+        encoding="utf-8",
+    )
+
+
+def create_identity() -> None:
+    """Create and save a new agent identity."""
+
+    load_dotenv()
+
+    if os.getenv("AGENT_PRIVATE_KEY") or os.getenv("AGENT_DID"):
+        print("An agent identity is already configured.")
+        print(f"Agent DID: {os.getenv('AGENT_DID', 'unknown')}")
+        return
 
     private_seed, did = generate_identity()
 
+    save_identity(private_seed, did)
+
+    print("Agent identity created successfully.")
     print(f"Agent DID: {did}")
-    print(f"Private seed: {private_seed}")
-    print()
-    print("Store the private seed securely. Never commit it to Git.")
+    print("Private key saved to .env")
 
 
-def show_status():
+def show_status() -> None:
     """Display the configured agent identity."""
 
     load_dotenv()
@@ -30,10 +52,11 @@ def show_status():
         print("No agent identity configured.")
         return
 
+    print("Agent identity configured.")
     print(f"Agent DID: {did}")
 
 
-def main():
+def main() -> None:
     """Run the command-line interface."""
 
     parser = argparse.ArgumentParser(
